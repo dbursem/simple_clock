@@ -3,6 +3,8 @@
 #include <Wire.h> //http://www.arduino.cc/en/Reference/Wire
 #include <RTClib.h> //https://github.com/adafruit/RTClib
 
+#define COMMON_ANODE true //set to false for common cathode displays!
+
 //LED arrays
 byte segments[8] = {
   4, 2, 6, 8, 9, 3, 5, 7}; //pins for segments A, B, C, D, E, F, G, DP
@@ -37,8 +39,7 @@ unsigned long oldmillis;
 void setup()
 {
   Serial.begin(9600);
-  RTC.begin(DateTime(2000,1,1,0,0,0));
-  //use the line below insted to automatically set the time on upload
+  RTC.begin(DateTime(2000,1,1,0,0,0));  //use the line below insted to automatically set the time on upload
   //RTC.begin(DateTime(F(__DATE__), F(__TIME__)));
   
   //set pinmodes
@@ -46,12 +47,12 @@ void setup()
   for (int i = 0; i < 8; i++) {
     //Segments (cathode)
     pinMode(segments[i], OUTPUT); 
-    digitalWrite(segments[i],HIGH); //high == off
+    digitalWrite(segments[i],COMMON_ANODE); // off
   }
   for (int i = 0; i < 4; i++) {
     //Digits (anode-side)
     pinMode(digits[i], OUTPUT);
-    digitalWrite(digits[i],LOW); //low == off
+    digitalWrite(digits[i],!COMMON_ANODE); // off
   }
   
   pinMode(button[0],INPUT_PULLUP);
@@ -88,21 +89,23 @@ void loop(){
   
   processSyncMessage();
   checkButtons();
-  
 }
 
 void Display()
 {
-  digitalWrite(digits[t], LOW); //turn previous row off
+  digitalWrite(digits[t], !COMMON_ANODE); //turn previous row off
   t++;
   if (t == 4){
     t = 0;
   }
   for (byte i = 0; i < 7; i++)
   {
-    digitalWrite(segments[i],!seven_seg_digits[number[t]][i]);
+    if (COMMON_ANODE)
+      digitalWrite(segments[i],!seven_seg_digits[number[t]][i]);
+    else
+      digitalWrite(segments[i],seven_seg_digits[number[t]][i]);
   }
-  digitalWrite(digits[t], HIGH); // Turn this entire row on at once 
+  digitalWrite(digits[t], COMMON_ANODE); // Turn this entire row on at once 
 }
 
 void checkButtons()
