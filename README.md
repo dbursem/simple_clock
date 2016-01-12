@@ -10,3 +10,5 @@ The 7 segment display is driven directly from the arduino, no controller necessa
 You can set the time using a serial connection, or you can optionally use 2 pushbuttons to set the time for a standalone situation. 
 
 This program uses the FrequencyTimer2 library to multiplex the display. It uses the Adafruit RTCLib to keep track of time without using a real time clock. The millis() rollover is catched so the clock will keep running indefinately.
+
+![image of assembled clock](https://cloud.githubusercontent.com/assets/5601853/12264188/40d789d8-b935-11e5-9a99-9ecfd0f05aa7.jpg)
