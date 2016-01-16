@@ -5,6 +5,8 @@
 
 #define COMMON_ANODE true //set to false for common cathode displays!
 
+int dailyDrift = 0; // daily drift to be compensated, in seconds. Positive if your clock is running fast, negative if it's running slow. 
+
 //LED arrays
 byte segments[8] = {
   4, 2, 6, 8, 9, 3, 5, 7}; //pins for segments A, B, C, D, E, F, G, DP
@@ -30,10 +32,13 @@ byte seven_seg_digits[10][7] = {
 RTC_Millis RTC;
 
 // some empty variables for later use
-byte hours = 0, minutes = 0, t = 0;
+byte hours = 0, minutes = 0, t = 0, oldHour = 0;
 byte number[4];
 DateTime now;
 unsigned long oldmillis;
+
+int hourlyDrift = dailyDrift / 24;
+int driftRemainder = dailyDrift % 24; 
 
 //setup function
 void setup()
@@ -89,6 +94,7 @@ void loop(){
   
   processSyncMessage();
   checkButtons();
+  driftCorrection();
 }
 
 void Display()
@@ -202,5 +208,20 @@ void printDateTime() {
   Serial.print(now.minute(), DEC);
   Serial.print(':');
   Serial.println(now.second(), DEC);
+}
+
+void driftCorrection() {
+  if (hours > oldHour && driftCorrection != 0)
+  {
+    //one hour has passed, time to compensate for drift
+    oldHour = hours;
+    
+    RTC.adjust(RTC.now() - hourlyDrift);
+    
+    if (hours = 0) //one day has passed, compensate the reminder of drift
+    {
+      RTC.adjust(RTC.now() - driftRemainder); 
+    }
+  }
 }
 
