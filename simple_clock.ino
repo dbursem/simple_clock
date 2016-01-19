@@ -5,7 +5,7 @@
 
 #define COMMON_ANODE true //set to false for common cathode displays!
 
-int dailyDrift = 0; // daily drift to be compensated, in seconds. Positive if your clock is running fast, negative if it's running slow. 
+int dailyDrift = 60; // daily drift to be compensated, in seconds. Positive if your clock is running fast, negative if it's running slow. 
 
 //LED arrays
 byte segments[8] = {
@@ -216,11 +216,11 @@ void driftCorrection() {
     //one hour has passed, time to compensate for drift
     oldHour = hours;
     
-    RTC.adjust(RTC.now() - hourlyDrift);
+    RTC.adjust(RTC.now().unixtime() - hourlyDrift);
     
     if (hours = 0) //one day has passed, compensate the reminder of drift
     {
-      RTC.adjust(RTC.now() - driftRemainder); 
+      RTC.adjust(RTC.now().unixtime() - driftRemainder); 
     }
   }
 }
