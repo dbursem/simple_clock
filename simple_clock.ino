@@ -5,8 +5,6 @@
 
 #define COMMON_ANODE true //set to false for common cathode displays!
 
-int dailyDrift = 60; // daily drift to be compensated, in seconds. Positive if your clock is running fast, negative if it's running slow. 
-
 //LED arrays
 byte segments[8] = {
   4, 2, 6, 8, 9, 3, 5, 7}; //pins for segments A, B, C, D, E, F, G, DP
@@ -15,7 +13,7 @@ byte digits[4] = {
 byte button[2] = {
   A2, A3 }; // pins for buttons 1, 2
 
-byte seven_seg_digits[10][7] = { 
+bool seven_seg_digits[10][7] = { 
   { 1,1,1,1,1,1,0 },  // = 0  
   { 0,1,1,0,0,0,0 },  // = 1
   { 1,1,0,1,1,0,1 },  // = 2
@@ -29,35 +27,32 @@ byte seven_seg_digits[10][7] = {
 };
 
 //init libraries
-RTC_Millis RTC;
+RTC_DS3231 RTC;
 
 // some empty variables for later use
 byte hours = 0, minutes = 0, t = 0, oldHour = 0;
 byte number[4];
 DateTime now;
-unsigned long oldmillis;
-
-int hourlyDrift = dailyDrift / 24;
-int driftRemainder = dailyDrift % 24; 
 
 //setup function
 void setup()
 {
   Serial.begin(9600);
-  RTC.begin(DateTime(2000,1,1,0,0,0));  //use the line below insted to automatically set the time on upload
-  //RTC.begin(DateTime(F(__DATE__), F(__TIME__)));
+  RTC.begin();
+  //RTC.adjust(DateTime(2000,1,1,0,0,0));  //use the line below insted to automatically set the time on upload
+  //RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   
   //set pinmodes
   pinMode(FREQUENCYTIMER2_PIN, OUTPUT); //this one is defined in the frequencytimer lib
   for (int i = 0; i < 8; i++) {
     //Segments (cathode)
     pinMode(segments[i], OUTPUT); 
-    digitalWrite(segments[i],COMMON_ANODE); // off
+    digitalWrite(segments[i], COMMON_ANODE); // off
   }
   for (int i = 0; i < 4; i++) {
     //Digits (anode-side)
     pinMode(digits[i], OUTPUT);
-    digitalWrite(digits[i],!COMMON_ANODE); // off
+    digitalWrite(digits[i], !COMMON_ANODE); // off
   }
   
   pinMode(button[0],INPUT_PULLUP);
@@ -77,13 +72,6 @@ void setup()
 }
 
 void loop(){
-  if (millis() < oldmillis )
-  {
-    //millis function has overflown. This will happen every ~50 days.
-    //Set time to last known correct time, so the clock keeps running (with a few µs delay). 
-    RTC.adjust(now);
-  }
-  oldmillis = millis();
   now = RTC.now();
   hours = now.hour();
   minutes = now.minute();
@@ -94,7 +82,6 @@ void loop(){
   
   processSyncMessage();
   checkButtons();
-  driftCorrection();
 }
 
 void Display()
@@ -106,10 +93,7 @@ void Display()
   }
   for (byte i = 0; i < 7; i++)
   {
-    if (COMMON_ANODE)
-      digitalWrite(segments[i],!seven_seg_digits[number[t]][i]);
-    else
-      digitalWrite(segments[i],seven_seg_digits[number[t]][i]);
+    digitalWrite(segments[i], COMMON_ANODE ^ seven_seg_digits[number[t]][i]);
   }
   digitalWrite(digits[t], COMMON_ANODE); // Turn this entire row on at once 
 }
@@ -121,7 +105,7 @@ void checkButtons()
     delay(100);
     if (!digitalRead(button[0]))
     {
-      RTC.adjust(DateTime(now.year(),now.month(),now.day(),now.hour()+1,now.minute(),00));
+      RTC.adjust(DateTime(now.unixtime() + 60));
     }
   }
   else if (!digitalRead(button[1]))
@@ -129,7 +113,7 @@ void checkButtons()
     delay(100);
     if (!digitalRead(button[1]))
     {
-      RTC.adjust(DateTime(now.year(),now.month(),now.day(),now.hour(),now.minute()+1,00));
+      RTC.adjust(DateTime(now.unixtime() - 60));
     }
   }
 }
@@ -198,9 +182,9 @@ void printDateTime() {
   DateTime now = RTC.now();
   Serial.print("Current date/time:  ");
   Serial.print(now.year(), DEC);
-  Serial.print('/');
+  Serial.print('-');
   Serial.print(now.month(), DEC);
-  Serial.print('/');
+  Serial.print('-');
   Serial.print(now.day(), DEC);
   Serial.print(' ');
   Serial.print(now.hour(), DEC);
@@ -209,19 +193,3 @@ void printDateTime() {
   Serial.print(':');
   Serial.println(now.second(), DEC);
 }
-
-void driftCorrection() {
-  if (hours > oldHour && driftCorrection != 0)
-  {
-    //one hour has passed, time to compensate for drift
-    oldHour = hours;
-    
-    RTC.adjust(RTC.now().unixtime() - hourlyDrift);
-    
-    if (hours = 0) //one day has passed, compensate the reminder of drift
-    {
-      RTC.adjust(RTC.now().unixtime() - driftRemainder); 
-    }
-  }
-}
-
