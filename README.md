@@ -9,7 +9,7 @@ The 7 segment display is driven directly from the arduino, no controller necessa
 
 You can set the time using a serial connection, or you can optionally use 2 pushbuttons to set the time for a standalone situation. 
 
-This program uses the FrequencyTimer2 library to multiplex the display. It uses the Adafruit RTCLib to keep track of time without using a real time clock. The millis() rollover is catched so the clock will keep running indefinitely. 
-I added experimental drift correction. This is (just like the rollover catch) not very scientific, but (hopefully) good enough for your average bedside table alarm clock. 
+This program uses the FrequencyTimer2 library to multiplex the display. It uses the Adafruit RTCLib to keep track of time without using a real time clock. 
+Formerly this script had some driftcorrection and timer overflow recovery in it. It never worked very well so I gave up and added an RTC module a long time ago, just like any sane person would do. I just cleaned up the code a bit since.
 
 ![image of assembled clock](https://cloud.githubusercontent.com/assets/5601853/12264188/40d789d8-b935-11e5-9a99-9ecfd0f05aa7.jpg)
